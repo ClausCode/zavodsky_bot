@@ -1,15 +1,14 @@
 import express from "express";
-import TelegramBot from "node-telegram-bot-api";
+import { bot } from "./bot";
 import { updatePaymentStatus } from "./payments";
 import { setSubscription } from "./subscriptions";
 
 const app = express();
 const port = process.env.PORT || 3000;
-const bot = new TelegramBot(process.env.BOT_TOKEN!, { polling: false });
 
 app.use(express.json());
 
-app.get("/webhook", (req, res) => {
+app.get("/webhook", (_, res) => {
   res.send("Hello World");
 });
 
