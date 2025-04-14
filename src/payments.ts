@@ -10,14 +10,11 @@ function mapPayment(payment: any): Payment {
   };
 }
 
-export async function createPayment(
-  data: CreatePaymentData & { yookassaId?: string }
-): Promise<Payment> {
+export async function createPayment(data: CreatePaymentData): Promise<Payment> {
   const payment = await prisma.payment.create({
     data: {
       ...data,
       status: "pending",
-      yookassaId: data.yookassaId,
     },
   });
   return mapPayment(payment);
@@ -28,7 +25,9 @@ export async function updatePaymentStatus(
   status: Payment["status"]
 ): Promise<Payment> {
   const payment = await prisma.payment.update({
-    where: { yookassaId },
+    where: {
+      yookassaId: yookassaId,
+    },
     data: { status },
   });
   return mapPayment(payment);
