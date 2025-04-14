@@ -10,6 +10,6 @@ export type SubscriptionType =
   | "sub_6_month"
   | "sub_12_month";
 
-export interface SubscriptionProducts {
+export type SubscriptionProducts = {
   [key in SubscriptionType]: SubscriptionProduct;
-}
+};
