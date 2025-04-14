@@ -57,6 +57,14 @@ export async function getPayment(paymentId: string): Promise<Payment | null> {
 
 export async function deletePayment(yookassaId: string): Promise<boolean> {
   try {
+    const payment = await prisma.payment.findUnique({
+      where: { yookassaId },
+    });
+
+    if (!payment) {
+      return true; // Если платеж не найден, считаем что он уже удален
+    }
+
     await prisma.payment.delete({
       where: { yookassaId },
     });
