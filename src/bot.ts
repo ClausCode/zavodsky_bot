@@ -138,6 +138,7 @@ bot.on("callback_query", async (query: CallbackQuery) => {
           userId,
           amount: product.price,
           productName: product.name,
+          yookassaId: payment.id,
         });
 
         const keyboard: InlineKeyboardMarkup = {

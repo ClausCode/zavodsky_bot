@@ -28,6 +28,7 @@ model Payment {
   amount      Int
   productName String
   status      String   @default("pending") @db.VarChar(20)
+  yookassaId  String?  @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
