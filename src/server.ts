@@ -9,6 +9,10 @@ const bot = new TelegramBot(process.env.BOT_TOKEN!, { polling: false });
 
 app.use(express.json());
 
+app.get("/webhook", (req, res) => {
+  res.send("Hello World");
+});
+
 app.post("/webhook", async (req, res) => {
   try {
     const { object } = req.body;

@@ -15,22 +15,22 @@ export const checkout = new YooCheckout({ shopId, secretKey });
 export const subscriptionProducts: SubscriptionProducts = {
   sub_1_month: {
     name: "Подписка на 1 месяц",
-    price: 10000, // 100 рублей в копейках
+    price: 100, // 100 рублей
     duration: 1,
   },
   sub_3_month: {
     name: "Подписка на 3 месяца",
-    price: 25000, // 250 рублей в копейках
+    price: 250, // 250 рублей
     duration: 3,
   },
   sub_6_month: {
     name: "Подписка на 6 месяцев",
-    price: 45000, // 450 рублей в копейках
+    price: 450, // 450 рублей
     duration: 6,
   },
   sub_12_month: {
     name: "Подписка на 12 месяцев",
-    price: 80000, // 800 рублей в копейках
+    price: 800, // 800 рублей
     duration: 12,
   },
 } as const;
