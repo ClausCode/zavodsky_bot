@@ -154,9 +154,9 @@ bot.on("callback_query", async (query: CallbackQuery) => {
 
         await bot.sendMessage(
           chatId,
-          `💎 ${product.name} за ${
-            product.price / 100
-          }₽\n\nНажмите на кнопку ниже для оплаты:`,
+          `💎 ${product.name} за ${Math.floor(
+            product.price
+          )}₽\n\nНажмите на кнопку ниже для оплаты:`,
           { reply_markup: keyboard }
         );
       } catch (error) {

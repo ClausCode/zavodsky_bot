@@ -1,6 +1,6 @@
 import express from "express";
 import { bot } from "./bot";
-import { updatePaymentStatus } from "./payments";
+import { updatePaymentStatus, deletePayment, capturePayment } from "./payments";
 import { setSubscription } from "./subscriptions";
 
 const app = express();
@@ -16,13 +16,26 @@ app.post("/webhook", async (req, res) => {
   try {
     const { object } = req.body;
 
-    if (object.status === "succeeded") {
+    if (object.status === "waiting_for_capture") {
+      // Подтверждаем платеж
+      const captured = await capturePayment(object.id);
+
+      if (!captured) {
+        console.error(`Не удалось подтвердить платеж ${object.id}`);
+        return res.sendStatus(200);
+      }
+
       const { metadata } = object;
       const userId = parseInt(metadata.userId);
       const duration = parseInt(metadata.duration);
 
       // Обновляем статус платежа
-      await updatePaymentStatus(object.id, "succeeded");
+      const updatedPayment = await updatePaymentStatus(object.id, "succeeded");
+
+      if (!updatedPayment) {
+        console.error(`Платеж с ID ${object.id} не найден в базе данных`);
+        return res.sendStatus(200);
+      }
 
       // Продлеваем подписку
       await setSubscription(userId, duration);
@@ -38,9 +51,14 @@ app.post("/webhook", async (req, res) => {
       console.log(
         `Пользователь ${userId} успешно оплатил подписку на ${duration} месяцев`
       );
+
+      // Удаляем запись о платеже
+      await deletePayment(object.id);
     } else if (object.status === "canceled") {
       // Обновляем статус платежа
       await updatePaymentStatus(object.id, "canceled");
+      // Удаляем запись о платеже
+      await deletePayment(object.id);
     }
 
     res.sendStatus(200);
