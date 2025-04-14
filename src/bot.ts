@@ -361,3 +361,72 @@ function scheduleDailyChecks() {
 
 // Запускаем планировщик при старте бота
 scheduleDailyChecks();
+
+// Функция для проверки прав администратора
+async function isAdmin(chatId: string, userId: number): Promise<boolean> {
+  try {
+    const chatMember = await bot.getChatMember(chatId, userId);
+    return ["creator", "administrator"].includes(chatMember.status);
+  } catch (error) {
+    console.error(
+      `Ошибка при проверке прав администратора для пользователя ${userId}:`,
+      error
+    );
+    return false;
+  }
+}
+
+// Обработчик события вступления нового участника
+bot.on("new_chat_members", async (msg) => {
+  if (
+    !privateGroupId ||
+    msg.chat.id.toString() !== privateGroupId ||
+    !msg.new_chat_members
+  ) {
+    return; // Игнорируем события из других чатов или если нет новых участников
+  }
+
+  for (const newMember of msg.new_chat_members) {
+    try {
+      // Проверяем, является ли пользователь администратором
+      const isUserAdmin = await isAdmin(privateGroupId, newMember.id);
+      if (isUserAdmin) {
+        console.log(
+          `Пользователь ${newMember.id} является администратором, пропускаем проверку подписки`
+        );
+        continue;
+      }
+
+      // Проверяем наличие активной подписки
+      const subscription = await getSubscription(newMember.id);
+      const now = new Date();
+
+      if (!subscription || subscription.endDate < now) {
+        // Удаляем пользователя из группы
+        await bot.banChatMember(privateGroupId, newMember.id);
+        console.log(
+          `Пользователь ${newMember.id} удален из группы из-за отсутствия активной подписки`
+        );
+
+        // Отправляем сообщение пользователю
+        try {
+          await bot.sendMessage(
+            newMember.id,
+            "❌ Вы были удалены из приватной группы, так как у вас нет активной подписки.\n\n" +
+              "Для доступа к группе необходимо приобрести подписку. Нажмите /start для выбора тарифа."
+          );
+        } catch (error) {
+          console.error(
+            `Ошибка при отправке сообщения пользователю ${newMember.id}:`,
+            error
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        `Ошибка при обработке нового участника ${newMember.id}:`,
+        error
+      );
+    }
+  }
+});
