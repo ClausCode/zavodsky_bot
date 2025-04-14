@@ -279,12 +279,14 @@ async function removeExpiredSubscriptions() {
       try {
         // Удаляем пользователя из группы
         await bot.banChatMember(privateGroupId, subscription.userId);
+        // Разбаниваем пользователя, чтобы он мог присоединиться снова
+        await bot.unbanChatMember(privateGroupId, subscription.userId);
         // Удаляем запись о подписке
         await prisma.subscription.delete({
           where: { userId: subscription.userId },
         });
         console.log(
-          `Пользователь ${subscription.userId} удален из группы из-за истекшей подписки`
+          `Пользователь ${subscription.userId} удален из группы из-за истекшей подписки и разбанен`
         );
       } catch (error) {
         console.error(
@@ -404,8 +406,10 @@ bot.on("new_chat_members", async (msg) => {
       if (!subscription || subscription.endDate < now) {
         // Удаляем пользователя из группы
         await bot.banChatMember(privateGroupId, newMember.id);
+        // Разбаниваем пользователя, чтобы он мог присоединиться снова
+        await bot.unbanChatMember(privateGroupId, newMember.id);
         console.log(
-          `Пользователь ${newMember.id} удален из группы из-за отсутствия активной подписки`
+          `Пользователь ${newMember.id} удален из группы из-за отсутствия активной подписки и разбанен`
         );
 
         // Отправляем сообщение пользователю
