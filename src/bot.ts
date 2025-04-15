@@ -26,9 +26,46 @@ export const bot = new TelegramBot(token, { polling: true });
 const prisma = new PrismaClient();
 
 // Обработчик команды /start
-bot.onText(/^\/start(@\w+)?$/, (msg: Message) => {
+bot.onText(/^\/start(@\w+)?$/, async (msg: Message) => {
   const chatId = msg.chat.id;
-  const keyboard: InlineKeyboardMarkup = {
+  const userId = msg.from?.id;
+
+  if (!userId) {
+    await bot.sendMessage(
+      chatId,
+      "❌ Ошибка: не удалось определить ID пользователя"
+    );
+    return;
+  }
+
+  // Проверяем, подтвердил ли пользователь возраст
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user || !user.isAgeVerified) {
+    const ageKeyboard: InlineKeyboardMarkup = {
+      inline_keyboard: [
+        [
+          { text: "✅ Мне есть 18 лет", callback_data: "age_verified" },
+          { text: "❌ Мне нет 18 лет", callback_data: "age_not_verified" },
+        ],
+      ],
+    };
+
+    await bot.sendMessage(
+      chatId,
+      "⚠️ <b>Внимание!</b>\n\nЭтот бот содержит контент строго 18+.\n\nПожалуйста, подтвердите, что вам есть 18 лет:",
+      {
+        parse_mode: "HTML",
+        reply_markup: ageKeyboard,
+      }
+    );
+    return;
+  }
+
+  // Если возраст подтвержден, показываем главное меню
+  const mainKeyboard: InlineKeyboardMarkup = {
     inline_keyboard: [
       [
         { text: "🔍 Проверить подписку", callback_data: "check_subscription" },
@@ -45,7 +82,7 @@ bot.onText(/^\/start(@\w+)?$/, (msg: Message) => {
     ],
   };
 
-  const subscriptionInfo = `
+  const mainMenuText = `
 🎯 <b>Приватная подписка</b>
 
 ✨ <b>Преимущества подписки:</b>
@@ -60,9 +97,9 @@ bot.onText(/^\/start(@\w+)?$/, (msg: Message) => {
 • 12 месяцев - 800₽ (экономия 400₽)
   `;
 
-  bot.sendMessage(chatId, subscriptionInfo, {
+  await bot.sendMessage(chatId, mainMenuText, {
     parse_mode: "HTML",
-    reply_markup: keyboard,
+    reply_markup: mainKeyboard,
   });
 });
 
@@ -245,6 +282,65 @@ bot.on("callback_query", async (query: CallbackQuery) => {
           "❌ Произошла ошибка при создании платежа. Попробуйте позже."
         );
       }
+      break;
+    case "age_verified":
+      // Создаем или обновляем пользователя с подтверждением возраста
+      await prisma.user.upsert({
+        where: { id: userId },
+        update: { isAgeVerified: true },
+        create: {
+          id: userId,
+          subscriptionEnd: new Date(),
+          isAgeVerified: true,
+        },
+      });
+
+      // Показываем главное меню
+      const mainMenuKeyboard: InlineKeyboardMarkup = {
+        inline_keyboard: [
+          [
+            {
+              text: "🔍 Проверить подписку",
+              callback_data: "check_subscription",
+            },
+            { text: "🔗 Получить приглашение", callback_data: "get_invite" },
+          ],
+          [
+            { text: "1 месяц - 100₽", callback_data: "sub_1_month" },
+            { text: "3 месяца - 250₽", callback_data: "sub_3_month" },
+          ],
+          [
+            { text: "6 месяцев - 450₽", callback_data: "sub_6_month" },
+            { text: "12 месяцев - 800₽", callback_data: "sub_12_month" },
+          ],
+        ],
+      };
+
+      const mainMenuText = `
+🎯 <b>Приватная подписка</b>
+
+✨ <b>Преимущества подписки:</b>
+• Доступ к эксклюзивному контенту
+• Чат с админами
+• Голосование за новую вайфу
+
+💎 <b>Выберите подходящий тариф:</b>
+• 1 месяц - 100₽
+• 3 месяца - 250₽ (экономия 50₽)
+• 6 месяцев - 450₽ (экономия 150₽)
+• 12 месяцев - 800₽ (экономия 400₽)
+      `;
+
+      await bot.sendMessage(chatId, mainMenuText, {
+        parse_mode: "HTML",
+        reply_markup: mainMenuKeyboard,
+      });
+      break;
+    case "age_not_verified":
+      await bot.sendMessage(
+        chatId,
+        "❌ Извините, но этот бот содержит контент строго 18+. Пожалуйста, вернитесь, когда вам исполнится 18 лет."
+      );
       break;
   }
 

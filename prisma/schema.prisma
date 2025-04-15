@@ -18,6 +18,7 @@ model User {
   subscriptionEnd DateTime
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  isAgeVerified   Boolean  @default(false)
 
   @@map("users")
 }
